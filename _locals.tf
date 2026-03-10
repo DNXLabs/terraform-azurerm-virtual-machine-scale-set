@@ -11,14 +11,11 @@ locals {
   rg_name = var.resource_group.create ? azurerm_resource_group.this["this"].name     : data.azurerm_resource_group.existing[0].name
   rg_loc  = var.resource_group.create ? azurerm_resource_group.this["this"].location : (try(var.resource_group.location, null) != null ? var.resource_group.location : data.azurerm_resource_group.existing[0].location)
 
-  vm_type_prefix = local.is_linux ? "lnx" : "win"
-  # VMSS name rules: lowercase letters, numbers, hyphen; <= 63 chars
-  base_vmss_name_raw = "vmss-${local.vm_type_prefix}-${local.prefix}-${try(var.vmss.name_suffix, "001")}"
-  base_vmss_name     = substr(replace(lower(local.base_vmss_name_raw), "/[^0-9a-z-]/", "-"), 0, 63)
-  vmss_name          = coalesce(try(var.vmss.name, null), local.base_vmss_name)
-
   is_linux   = lower(var.vmss.os_type) == "linux"
   is_windows = lower(var.vmss.os_type) == "windows"
+
+  # Resource names: use var.name directly as the full name
+  vmss_name = var.name
 
   # SSH public key
   ssh_public_key_raw  = try(var.vmss.ssh_public_key, null)
@@ -43,7 +40,7 @@ locals {
   sig_gallery_name_raw = coalesce(try(var.gallery.gallery_name, null), "sig_${local.prefix}")
   sig_gallery_name     = substr(replace(replace(local.sig_gallery_name_raw, "-", "_"), "/[^0-9A-Za-z._]/", "_"), 0, 80)
 
-  sig_image_name_raw = coalesce(try(var.gallery.image_name, null), "img_${local.prefix}_${try(var.vmss.name_suffix, "001")}")
+  sig_image_name_raw = coalesce(try(var.gallery.image_name, null), "img_${local.vmss_name}")
   sig_image_name     = substr(replace(replace(local.sig_image_name_raw, "-", "_"), "/[^0-9A-Za-z._]/", "_"), 0, 80)
 
   sig_should_create_gallery          = local.gallery_enabled && try(var.gallery.create_gallery, true)
@@ -52,11 +49,7 @@ locals {
   # Autoscale
   autoscale_enabled = try(var.autoscale.enabled, false)
 
-  autoscale_name = substr(
-    replace(lower("as-${local.vmss_name}-${try(var.autoscale.name_suffix, "cpu")}"), "/[^0-9a-z-]/", "-"),
-    0,
-    80
-  )
+  autoscale_name = "as-${local.vmss_name}"
 
   # Windows computer_name_prefix: max 9 chars
   windows_cnp_default  = substr(replace(lower(local.prefix), "/[^0-9a-z]/", ""), 0, 9)
@@ -65,8 +58,8 @@ locals {
   # VMSS ID (used by autoscale target)
   vmss_id = local.is_linux ? azurerm_linux_virtual_machine_scale_set.this["this"].id : azurerm_windows_virtual_machine_scale_set.this["this"].id
 
-  nic_name = "nic-vmss-${local.vm_type_prefix}-${local.prefix}-${try(var.vmss.name_suffix, "001")}"
-  pip_name = "pip-vmss-${local.vm_type_prefix}-${local.prefix}-${try(var.vmss.name_suffix, "001")}"
+  nic_name = "nic-${local.vmss_name}"
+  pip_name = "pip-${local.vmss_name}"
 
   diag_enabled = try(var.diagnostics.enabled, false) && (try(var.diagnostics.log_analytics_workspace_id, null) != null || try(var.diagnostics.storage_account_id, null) != null || try(var.diagnostics.eventhub_authorization_rule_id, null) != null)
 }

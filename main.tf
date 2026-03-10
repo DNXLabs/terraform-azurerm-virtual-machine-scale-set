@@ -83,7 +83,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
     ip_configuration {
       name      = "ipconfig1"
       primary   = true
-      subnet_id = var.subnet_id
+      subnet_id                              = var.subnet_id
+      load_balancer_backend_address_pool_ids = try(each.value.load_balancer_backend_address_pool_ids, null)
+      application_gateway_backend_address_pool_ids = try(each.value.application_gateway_backend_address_pool_ids, null)
     }
   }
 
@@ -155,7 +157,9 @@ resource "azurerm_windows_virtual_machine_scale_set" "this" {
     ip_configuration {
       name      = "ipconfig1"
       primary   = true
-      subnet_id = var.subnet_id
+      subnet_id                              = var.subnet_id
+      load_balancer_backend_address_pool_ids = try(each.value.load_balancer_backend_address_pool_ids, null)
+      application_gateway_backend_address_pool_ids = try(each.value.application_gateway_backend_address_pool_ids, null)
     }
   }
 
@@ -185,7 +189,7 @@ resource "azurerm_windows_virtual_machine_scale_set" "this" {
 resource "azurerm_monitor_autoscale_setting" "this" {
   for_each = try(var.autoscale.enabled, false) ? { "this" = true } : {}
 
-  name                = "as-${local.vmss_name}-${try(var.autoscale.name_suffix, "cpu")}"
+  name                = local.autoscale_name
   resource_group_name = local.rg_name
   location            = local.rg_loc
 

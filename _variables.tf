@@ -39,7 +39,6 @@ variable "vmss" {
   type = object({
     os_type     = string # linux | windows
     name        = optional(string)
-    name_suffix = optional(string, "001")
 
     sku       = string
     instances = optional(number, 1)
@@ -60,7 +59,9 @@ variable "vmss" {
     })
 
     # Networking
-    enable_accelerated_networking = optional(bool, false)
+    enable_accelerated_networking      = optional(bool, false)
+    load_balancer_backend_address_pool_ids = optional(list(string))
+    application_gateway_backend_address_pool_ids = optional(list(string))
 
     # Security
     security_type       = optional(string, "Standard") # Standard | TrustedLaunch | ConfidentialVM
@@ -94,7 +95,6 @@ variable "autoscale" {
   description = "Autoscale settings for the VMSS."
   type = object({
     enabled     = bool
-    name_suffix = optional(string, "cpu")
 
     capacity = optional(object({
       min     = number
